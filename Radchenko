@@ -1,0 +1,130 @@
+from collections import UserDict
+from datetime import datetime, timedelta
+
+class Field:
+    def __init__(self, value):
+        self.value = value
+
+    def validate(self):
+        raise NotImplementedError("Subclasses must implement validate method.")
+
+class Name(Field):
+    def validate(self):
+        if not self.value.strip():
+            raise ValueError("Name cannot be empty.")
+
+class Phone(Field):
+    def validate(self):
+        if not self.value.isdigit() or len(self.value) != 10:
+            raise ValueError("Invalid phone number format.")
+
+class Birthday(Field):
+    def validate(self):
+        try:
+            datetime.strptime(self.value, '%d.%m.%Y')
+        except ValueError:
+            raise ValueError("Invalid birthday format. Please use DD.MM.YYYY.")
+
+class Record:
+    def __init__(self, name):
+        self.name = Name(name)
+        self.phones = []
+        self.birthday = None
+
+    def add_phone(self, phone):
+        phone_field = Phone(phone)
+        phone_field.validate()
+        self.phones.append(phone_field)
+
+    def remove_phone(self, phone):
+        for p in self.phones:
+            if p.value == phone:
+                self.phones.remove(p)
+                return
+        raise ValueError("Phone number not found.")
+
+    def edit_phone(self, old_phone, new_phone):
+        self.remove_phone(old_phone)
+        self.add_phone(new_phone)
+
+    def find_phone(self, phone):
+        for p in self.phones:
+            if p.value == phone:
+                return p
+        raise ValueError("Phone number not found.")
+
+    def add_birthday(self, birthday):
+        birthday_field = Birthday(birthday)
+        birthday_field.validate()
+        self.birthday = birthday_field
+
+class AddressBook(UserDict):
+    def add_record(self, record):
+        self.data[record.name.value] = record
+
+    def find(self, name):
+        if name in self.data:
+            return self.data[name]
+        raise ValueError("Record not found.")
+
+    def delete(self, name):
+        if name in self.data:
+            del self.data[name]
+        else:
+            raise ValueError("Record not found.")
+
+    def get_birthdays_per_week(self):
+        today = datetime.now().date()
+        next_week = today + timedelta(days=7)
+        birthdays = []
+        for record in self.data.values():
+            if record.birthday:
+                birthday_date = datetime.strptime(record.birthday.value, '%d.%m.%Y').date()
+                if today <= birthday_date < next_week:
+                    birthdays.append((record.name.value, birthday_date))
+        return birthdays
+
+if __name__ == "__main__":
+    # Створення нової адресної книги
+    book = AddressBook()
+
+    # Створення запису для John
+    john_record = Record("John")
+    john_record.add_phone("1234567890")
+    john_record.add_phone("5555555555")
+    john_record.add_birthday("01.01.1990")
+
+    # Додавання запису John до адресної книги
+    book.add_record(john_record)
+
+    # Створення та додавання нового запису для Jane
+    jane_record = Record("Jane")
+    jane_record.add_phone("9876543210")
+    jane_record.add_birthday("15.03.1985")
+    book.add_record(jane_record)
+
+    # Виведення всіх записів у книзі
+    for name, record in book.data.items():
+        print(record)
+
+    # Знаходження та редагування телефону для John
+    john = book.find("John")
+    john.edit_phone("1234567890", "1112223333")
+
+    print(john)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
+
+    # Пошук конкретного телефону у записі John
+    found_phone = john.find_phone("5555555555")
+    print(f"{john.name}: {found_phone}")  # Виведення: 5555555555
+
+    # Видалення запису Jane
+    book.delete("Jane")
+
+    # Додавання та показ дня народження
+    john.add_birthday("20.05.1992")
+    print(f"{john.name}'s birthday: {john.birthday.value}")
+
+    # Показати дні народження наступного тижня
+    print("Birthdays next week:")
+    for name, birthday in book.get_birthdays_per_week():
+        print(f"{name}: {birthday}")
