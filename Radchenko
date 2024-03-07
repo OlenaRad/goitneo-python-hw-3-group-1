@@ -84,47 +84,68 @@ class AddressBook(UserDict):
                     birthdays.append((record.name.value, birthday_date))
         return birthdays
 
+class Bot:
+    def __init__(self):
+        self.book = AddressBook()
+
+    def add_contact(self, name, phone):
+        record = Record(name)
+        record.add_phone(phone)
+        self.book.add_record(record)
+
+    def change_phone(self, name, new_phone):
+        record = self.book.find(name)
+        record.edit_phone(record.phones[0].value, new_phone)
+
+    def show_phone(self, name):
+        record = self.book.find(name)
+        return record.phones[0].value
+
+    def show_all_contacts(self):
+        return list(self.book.data.keys())
+
+    def add_birthday(self, name, birthday):
+        record = self.book.find(name)
+        record.add_birthday(birthday)
+
+    def show_birthday(self, name):
+        record = self.book.find(name)
+        return record.birthday.value
+
+    def show_birthdays_next_week(self):
+        return self.book.get_birthdays_per_week()
+
+    def greet(self):
+        return "Hello! How can I assist you?"
+
 if __name__ == "__main__":
-    # Створення нової адресної книги
-    book = AddressBook()
+    bot = Bot()
+    while True:
+        command = input("Enter a command: ")
+        if command.startswith("add"):
+            _, name, phone = command.split()
+            bot.add_contact(name, phone)
+        elif command.startswith("change"):
+            _, name, new_phone = command.split()
+            bot.change_phone(name, new_phone)
+        elif command.startswith("phone"):
+            _, name = command.split()
+            print(bot.show_phone(name))
+        elif command == "all":
+            print(bot.show_all_contacts())
+        elif command.startswith("add-birthday"):
+            _, name, birthday = command.split()
+            bot.add_birthday(name, birthday)
+        elif command.startswith("show-birthday"):
+            _, name = command.split()
+            print(bot.show_birthday(name))
+        elif command == "birthdays":
+            print(bot.show_birthdays_next_week())
+        elif command == "hello":
+            print(bot.greet())
+        elif command in ["close", "exit"]:
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid command.")
 
-    # Створення запису для John
-    john_record = Record("John")
-    john_record.add_phone("1234567890")
-    john_record.add_phone("5555555555")
-    john_record.add_birthday("01.01.1990")
-
-    # Додавання запису John до адресної книги
-    book.add_record(john_record)
-
-    # Створення та додавання нового запису для Jane
-    jane_record = Record("Jane")
-    jane_record.add_phone("9876543210")
-    jane_record.add_birthday("15.03.1985")
-    book.add_record(jane_record)
-
-    # Виведення всіх записів у книзі
-    for name, record in book.data.items():
-        print(record)
-
-    # Знаходження та редагування телефону для John
-    john = book.find("John")
-    john.edit_phone("1234567890", "1112223333")
-
-    print(john)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
-
-    # Пошук конкретного телефону у записі John
-    found_phone = john.find_phone("5555555555")
-    print(f"{john.name}: {found_phone}")  # Виведення: 5555555555
-
-    # Видалення запису Jane
-    book.delete("Jane")
-
-    # Додавання та показ дня народження
-    john.add_birthday("20.05.1992")
-    print(f"{john.name}'s birthday: {john.birthday.value}")
-
-    # Показати дні народження наступного тижня
-    print("Birthdays next week:")
-    for name, birthday in book.get_birthdays_per_week():
-        print(f"{name}: {birthday}")
